@@ -96,14 +96,14 @@ class RidgeClassifier(SklearnTransform):
 
 
 class ElasticNetClassifier(SklearnTransform):
-    default_args = dict(alpha=1.0, l1_ratio=0.5, margin=1e-5)
+    default_args = dict(alpha=1.0, l1_ratio=0.5, epsilon=1e-10)
     req_inputs = {"X", "y"}
     allow_params = {"model"}
     allow_stream = {"y", "z"}
 
     def _setup(self):
-        if "margin" in self.args:
-            self.margin = self.args.pop("margin")
+        if "epsilon" in self.args:
+            self.epsilon = self.args.pop("epsilon")
 
     def _fit(self, inputs, stream, params):
         y = inputs["y"]
@@ -125,7 +125,7 @@ class ElasticNetClassifier(SklearnTransform):
 
     def _map(self, inputs, stream):
         z = self.params().get("model").predict(inputs["X"])
-        z[np.where(np.abs(z) < self.margin)] = 0
+        z[np.where(np.abs(z) < self.epsilon)] = 0
         y = np.zeros_like(z)
         y[np.where(z > 0.0)] = 1.0
         stream.put("y", y)
@@ -181,7 +181,7 @@ class RandomForestRegressor(SklearnTransform):
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.0,
-        max_features="auto",
+        max_features=1.0,
         max_leaf_nodes=None,
         min_impurity_decrease=0.0,
         # min_impurity_split=None,
@@ -218,7 +218,7 @@ class RandomForestClassifier(SklearnTransform):
         min_samples_split=2,
         min_samples_leaf=1,
         min_weight_fraction_leaf=0.0,
-        max_features="auto",
+        max_features="sqrt",
         max_leaf_nodes=None,
         min_impurity_decrease=0.0,
         # min_impurity_split=None,
@@ -356,9 +356,9 @@ class SupportVectorClassifier(SklearnTransform):
 
 class SupportVectorRegressor(SklearnTransform):
     default_args = dict(
-        kernel="rbf",
+        kernel='rbf',
         degree=3,
-        gamma="scale",
+        gamma='scale',
         coef0=0.0,
         tol=0.001,
         C=1.0,
@@ -366,11 +366,11 @@ class SupportVectorRegressor(SklearnTransform):
         shrinking=True,
         cache_size=200,
         verbose=False,
-        max_iter=-1,
+        max_iter=-1
     )
     req_inputs = {"X", "y"}
     allow_params = {"model"}
-    allow_stream = {"y"}
+    allow_stream = {"y",}
 
     def _fit(self, inputs, stream, params):
         model = sklearn.svm.SVR(**self.args)
@@ -395,7 +395,6 @@ class LogisticRegression(SklearnTransform):
         random_state=None,
         solver="lbfgs",
         max_iter=100,
-        multi_class="auto",
         verbose=0,
         warm_start=False,
         n_jobs=None,
